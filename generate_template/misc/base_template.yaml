@@ -9,7 +9,7 @@ Parameters:
   StageName:
     Type: String
     Description: Stage Name used in API GW
-    Default: Prod
+    Default: Staging
 
 Resources:
   MainSNSTopic:
@@ -18,7 +18,7 @@ Resources:
   proxyGateway:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Prod
+      StageName: Staging
       MethodSettings:
         - ResourcePath: /
           HttpMethod: ANY
@@ -27,7 +27,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: src/modules/proxy-function.handler
-      Runtime: nodejs14.x
+      Runtime: nodejs18.x
       Architectures:
         - x86_64
       MemorySize: 128

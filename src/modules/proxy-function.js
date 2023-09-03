@@ -1,5 +1,8 @@
 const nacl = require('tweetnacl');
-const AWS = require('aws-sdk');
+const {
+  SNSClient,
+  PublishCommand,
+} = require("@aws-sdk/client-sns");
 
 exports.handler = async (event) => {
   const strBody = event.body; // should be string, for successful sign
@@ -12,6 +15,7 @@ exports.handler = async (event) => {
     const timestamp = event.headers['x-signature-timestamp'] || event.headers['X-Signature-Timestamp'];
 
 
+    console.log("body", strBody);
     const isVerified = nacl.sign.detached.verify(
       Buffer.from(timestamp + strBody),
       Buffer.from(signature, 'hex'),
@@ -39,14 +43,19 @@ exports.handler = async (event) => {
   // Handle command (send to SNS and split to one of Lambdas)
   if (body.data.name) {
     var eventText = JSON.stringify(body, null, 2);
-    var params = {
-        Message: eventText,
-        Subject: "Test SNS From Lambda",
-        TopicArn: process.env.TOPIC_ARN,
-        MessageAttributes: { "command": { DataType: 'String', StringValue: body.data.name } }
+
+    const client = new SNSClient();
+    const input = {
+      TopicArn: process.env.TOPIC_ARN,
+      Subject: "Test SNS From Lambda",
+      Message: eventText,
+      MessageAttributes: {
+        command: { DataType: "String", StringValue: body.data.name },
+      },
     };
-    // Create promise and SNS service object
-    await new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+    const command = new PublishCommand(input);
+    
+    await client.send(command);
     
     return {
       statusCode: 200,
